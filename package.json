@@ -1,0 +1,6 @@
+{
+  "name": "stinger",
+  "private": true,
+  "type": "module",
+  "description": "Marks the repository's .js files as ES modules so the offline tools in tools/ can import the shared app modules directly. No dependencies, no build step - the game itself is built by svtool."
+}

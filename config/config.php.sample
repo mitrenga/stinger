@@ -1,0 +1,6 @@
+<?php
+
+  $dbHostname = 'localhost';
+  $dbName = 'stinger';
+  $dbUser = 'your-user-name';
+  $dbPassword = 'your-password';

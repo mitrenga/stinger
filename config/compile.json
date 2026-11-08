@@ -1,0 +1,10 @@
+{
+    "standalone": [
+        "gameWorker.js",
+        "bootWorker.js",
+        "aySynth.js",
+        "soundDriver.js",
+        "stingerSoundProcessor.js",
+        "svision/js/audio/worker/oscilatorWorker.js"
+    ]
+}

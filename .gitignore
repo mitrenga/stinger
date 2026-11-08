@@ -1,0 +1,22 @@
+*.html
+config/config.php
+js
+test*
+tmp*
+tools/refemu/refemu
+# ST-M3: the browser acceptance test page is source, not a generated file
+!tools/refemu/browser-check.html
+!tools/refemu/browser-game-check.html
+# ST-M6: the sound acceptance test page, likewise source
+!tools/refemu/browser-sound-check.html
+# ROM sets are not in git (sources/rom/README.md stays); the rest of sources/ is tracked
+sources/rom/stinger/
+sources/rom/stinger2/
+sources/rom/scion/
+sources/rom/*.zip
+sources/
+CLAUDE.md
+.claude/
+MILNIKY.md
+ZADANI.md
+*.log
