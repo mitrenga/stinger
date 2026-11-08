@@ -1,0 +1,7 @@
+#!/usr/bin/bash
+
+rsvg-convert -w 192 -h 192 app-icon.svg -o app-icon-192x192.png
+rsvg-convert -w 256 -h 256 app-icon.svg -o app-icon-256x256.png
+rsvg-convert -w 512 -h 512 app-icon.svg -o app-icon-512x512.png
+rsvg-convert -w 1024 -h 1024 app-icon.svg -o app-icon-1024x1024.png
+rsvg-convert -w 1980 -h 1980 app-icon.svg -o app-icon-1980x1980.png

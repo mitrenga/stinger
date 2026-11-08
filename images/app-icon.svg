@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1600" height="1600">
+<rect width="100%" height="100%" fill="#999999"/>
+<path d="M900 0 h200 v200 h-100 v200 h100 v100 h-100 v100 h-100 v100 h100 v100 h100 v200 h100 v200 h-200 v-100
+         h-100 v-100 h-100 v100 h100 v100 h100 v100 h100 v200 h100 v100 h-300 v-100 h-100 v-100 h100 v-100 h-100
+         v100 h-100 v100 h100 v100 h-300 v-300 h100 v-100 h-200 v-200 h100 v-200 h100 v-100 h100 v-100 h-100
+         v-300 h-100 v-100 h100 v-100 h300 v-100z
+         M800 300 v100 h100 v-100z"
+         style="fill:#FFEBEE" />
+</svg>

@@ -1,0 +1,5 @@
+{
+  "//": "Only marks app/*.js as ES modules for Node, so tools/refemu can import the shared renderer app/tileMapRender.js directly (pixel identity refemu <-> browser). The browser and svtool ignore this file; svtool copies only *.js into js/.",
+  "type": "module",
+  "private": true
+}
