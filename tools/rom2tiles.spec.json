@@ -1,0 +1,11 @@
+{
+ "note": "Stinger (Seibu Denshi 1983) graphics and palette ROMs, MAME set 'stinger' (seibu/wiz.cpp). Paths relative to this spec.",
+ "romDir": "../sources/rom/stinger",
+ "gfx": {
+  "gfx1": {"planes": ["7-9e.bin", "8-11e.bin", "9-14e.bin"], "note": "MAME region gfx1 (0x6000): plane files at 0x0000 (bit 0), 0x2000 (bit 1), 0x4000 (bit 2). Tiles: layer 1 (foreground, D000) banks 0/1 = gfxdecode 0/1; sprites: set 1 (D840) = gfxdecode 4"},
+  "gfx2": {"planes": ["10-9h.bin", "11-11h.bin", "12-14h.bin"], "note": "MAME region gfx2: tiles: layer 0 (background, E000) banks 0/1 = gfxdecode 2/3; sprites: set 0 (E840) = gfxdecode 5"}
+ },
+ "proms": {"r": "stinger.a7", "g": "stinger.b7", "b": "stinger.a8", "note": "3 x 256x4, one per gun; resistors 1k/470/220/100 ohm (bit 0..3), pulldown 470 (MAME wiz_state::palette)"},
+ "outputs": {"tiles": "../data/tiles.json", "sprites": "../data/sprites.json", "palette": "../data/palette.json"},
+ "previewTiles": {"gfx1": {"bank": 0, "codes": ["0x01", "0x10", "0x20", "0x30"]}, "gfx2": {"bank": 0, "codes": ["0x01", "0x10"]}}
+}

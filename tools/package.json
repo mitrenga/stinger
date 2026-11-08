@@ -1,0 +1,5 @@
+{
+  "//": "Marks tools/**/*.js as ES modules for Node (refemu: z80.js, machine.js, video helpers). Plain *.mjs tools are unaffected; nothing here is deployed.",
+  "type": "module",
+  "private": true
+}

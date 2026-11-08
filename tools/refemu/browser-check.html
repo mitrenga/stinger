@@ -1,0 +1,59 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Stinger — tileMapRender browser check (ST-M3)</title>
+<!--
+  Renders one frame of data/screens.json with app/tileMapRender.js the way
+  TileMapEntity and SpriteLayerEntity do it — the layers into one ImageData, the
+  sprites into a transparent one drawn on top — and publishes the resulting
+  canvas as a data URL in #png, so tools/refemu/browser-check.sh can pull the
+  exact pixels out of a headless browser without depending on the viewport size
+  or the device scale factor. Served from the project root;
+  ?screen=title|gameStart|fortress.
+-->
+<body style="margin:0;background:#000">
+<canvas id="c" width="224" height="256"></canvas>
+<script type="module">
+import {TileMapRender} from '../../app/tileMapRender.js';
+
+const bytes = (text) => {
+  const binary = atob(text);
+  const data = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    data[i] = binary.charCodeAt(i);
+  }
+  return data;
+};
+
+const load = async (name) => (await fetch('../../data/'+name)).json();
+const [tiles, sprites, palette, screens] = await Promise.all(
+  ['tiles.json', 'sprites.json', 'palette.json', 'screens.json'].map(load));
+
+const render = new TileMapRender({tiles, sprites, palette});
+const screen = screens[new URLSearchParams(location.search).get('screen') || 'title'];
+const state = {
+  vram: screen.vram.map(bytes),
+  attr: screen.attr.map(bytes),
+  sprites: screen.sprites.map(bytes),
+  regs: screen.regs
+};
+
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const layers = ctx.createImageData(224, 256);
+render.renderLayers(state, layers.data);
+ctx.putImageData(layers, 0, 0);
+
+const off = document.createElement('canvas');
+off.width = 224;
+off.height = 256;
+const offCtx = off.getContext('2d');
+const overlay = offCtx.createImageData(224, 256);
+render.renderSprites(state, overlay.data);
+offCtx.putImageData(overlay, 0, 0);
+ctx.drawImage(off, 0, 0);
+
+const out = document.createElement('div');
+out.id = 'png';
+out.textContent = canvas.toDataURL('image/png');
+document.body.appendChild(out);
+</script>

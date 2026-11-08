@@ -1,0 +1,166 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Stinger — the sound board in a browser (ST-M6)</title>
+<!--
+  Runs the sound board in a real browser engine: composes the AudioWorklet the
+  way app/stingerSoundHandler.js does (app/aySynth.js + app/soundDriver.js +
+  app/stingerSoundProcessor.js, the svtool bundle transformation, one blob URL),
+  registers it in an OfflineAudioContext, feeds it a script of latch writes and
+  renders a few seconds. What is checked is the browser half of ST-M6: that the
+  three ES modules really do concatenate into a classic script, that the worklet
+  registers and produces sound, and that nothing throws on the audio thread.
+  tools/refemu/browser-sound-check.sh reads the numbers below out of the DOM and
+  compares them with tools/render-sound.mjs fed the same latch script.
+
+  Served from the project root; ?seconds=N&rate=48000
+-->
+<body style="margin:0;background:#000;color:#0f0;font:12px monospace">
+<script>
+  window.__errors = [];
+  window.addEventListener('error', (e) => window.__errors.push(String(e.message)));
+  window.addEventListener('unhandledrejection', (e) => window.__errors.push(String(e.reason)));
+  const consoleError = console.error.bind(console);
+  console.error = function() { window.__errors.push(Array.prototype.join.call(arguments, ' ')); consoleError.apply(null, arguments); };
+</script>
+<script type="module">
+const params = new URLSearchParams(location.search);
+const seconds = parseFloat(params.get('seconds') || '5');
+const rate = parseInt(params.get('rate') || '48000', 10);
+const FRAME_RATE = 60;
+
+/** the svtool bundle transformation, the same one app/stingerSoundHandler.js applies */
+function bundleCode(text, name) {
+  const marker = '// begin code';
+  const pos = text.indexOf(marker);
+  let code = (pos < 0) ? text : text.substring(pos + marker.length);
+  code = code.replace(/^[ \t]*export[ \t]+default[ \t]+[^\n;]+;[ \t]*$/gm, '');
+  code = code.replace(/^([ \t]*)export[ \t]+/gm, '$1');
+  return '// === ' + name + ' ===\n' + code;
+}
+
+/** one command in the first frame, then 00h — what the main CPU does (0CB8h) */
+function latchScript(command, frames, first) {
+  const script = [];
+  for (let i = 0; i < frames; i++) {
+    const entry = {latch: [{slot: 0, value: (i === 0) ? command : 0x00}],
+      shot: 0, shotSlots: [], boom: 0, boomSlots: []};
+    if (i === 0 && first) { Object.assign(entry, first); }
+    script.push(entry);
+  }
+  return script;
+}
+
+const say = (text) => {
+  const div = document.createElement('div');
+  div.textContent = text;
+  document.body.appendChild(div);
+};
+
+/**
+ * Waits for an OfflineAudioContext render under --virtual-time-budget. The
+ * rendering runs on the audio thread, which headless Chrome's virtual clock
+ * does not know about: with the page idle the clock fast-forwards through the
+ * whole budget and the DOM is dumped before a single quantum has been produced.
+ * Keeping a task in the queue holds the virtual clock still (it only advances
+ * when the queue runs dry) and hands the audio thread real time. The task has to
+ * be a MessageChannel one, not a timer — a timer is exactly what the virtual
+ * clock would fast-forward.
+ */
+const pump = new MessageChannel();
+function yieldTask() {
+  return new Promise((resolve) => {
+    pump.port1.onmessage = () => resolve();
+    pump.port2.postMessage(0);
+  });
+}
+
+async function settle(promise, timeoutMs) {
+  let value = null, error = null, done = false;
+  promise.then((v) => { value = v; done = true; }, (e) => { error = e; done = true; });
+  const deadline = Date.now() + (timeoutMs || 60000);
+  while (!done && Date.now() < deadline) {
+    await yieldTask();
+  }
+  if (!done) { throw new Error('the offline render did not finish in time'); }
+  if (error) { throw error; }
+  return value;
+}
+
+async function main() {
+  const sources = ['aySynth.js', 'soundDriver.js', 'stingerSoundProcessor.js'];
+  const parts = [];
+  for (const name of sources) {
+    const response = await fetch('../../app/' + name);
+    if (!response.ok) { throw new Error(name + ' ' + response.status); }
+    parts.push(bundleCode(await response.text(), name));
+  }
+  const moduleText = parts.join('\n');
+  const blobURL = URL.createObjectURL(new Blob([moduleText], {type: 'text/javascript'}));
+  // the tables are base64 in the file; an AudioWorkletGlobalScope has no atob,
+  // so app/stingerSoundHandler.js decodes them here too
+  const raw = await (await fetch('../../data/sound.json')).json();
+  const soundData = {tables: raw.tables.map((t) => {
+    const binary = atob(t.data);
+    const bytes = new Array(binary.length);
+    for (let i = 0; i < binary.length; i++) { bytes[i] = binary.charCodeAt(i); }
+    return {addr: t.addr, data: bytes};
+  })};
+
+  /** renders one case and returns its length / peak / RMS */
+  async function render(role, command, frames, first) {
+    const ctx = new OfflineAudioContext(1, Math.round(seconds * rate), rate);
+    await ctx.audioWorklet.addModule(blobURL);
+    const node = new AudioWorkletNode(ctx, 'StingerSoundProcessor', {
+      numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [1],
+      processorOptions: {role, soundData, script: latchScript(command, frames, first)}
+    });
+    node.port.onmessage = (event) => window.__errors.push('port: ' + JSON.stringify(event.data));
+    node.onprocessorerror = () => window.__errors.push('processor error in ' + role);
+    node.connect(ctx.destination);
+    const buffer = await settle(ctx.startRendering());
+    const data = buffer.getChannelData(0);
+    let peak = 0, sum = 0, nonZero = 0;
+    for (let i = 0; i < data.length; i++) {
+      const v = Math.abs(data[i]);
+      if (v > peak) { peak = v; }
+      if (v > 0) { nonZero++; }
+      sum += data[i] * data[i];
+    }
+    return {samples: data.length, seconds: data.length / rate, peak,
+      rms: Math.sqrt(sum / data.length), nonZeroRatio: nonZero / data.length};
+  }
+
+  const cases = [
+    {id: 'music-02', role: 'music', command: 0x02, frames: Math.round(seconds * FRAME_RATE),
+     note: 'the tune that starts a life, MUSIC bus'},
+    {id: 'sounds-10', role: 'sounds', command: 0x10, frames: Math.round(seconds * FRAME_RATE),
+     first: {shot: 1}, note: 'the Bongo beep plus one discrete shot, SOUNDS bus'},
+    {id: 'sounds-02', role: 'sounds', command: 0x02, frames: Math.round(seconds * FRAME_RATE),
+     note: 'a tune on the SOUNDS bus: the role mask must silence it'}
+  ];
+
+  const results = {};
+  for (const c of cases) {
+    results[c.id] = await render(c.role, c.command, c.frames, c.first);
+    const r = results[c.id];
+    say(c.id + ': ' + r.seconds.toFixed(2) + ' s, ' + r.samples + ' samples, peak ' +
+      r.peak.toFixed(4) + ', RMS ' + r.rms.toFixed(4) + '  (' + c.note + ')');
+  }
+  URL.revokeObjectURL(blobURL);
+  return {rate, moduleBytes: moduleText.length, cases: results};
+}
+
+let summary;
+try {
+  summary = await main();
+} catch (error) {
+  summary = {failed: String(error && error.message ? error.message : error)};
+  say('FAILED: ' + summary.failed);
+}
+summary.errors = window.__errors;
+
+const out = document.createElement('div');
+out.id = 'result';
+out.textContent = JSON.stringify(summary);
+document.body.appendChild(out);
+</script>

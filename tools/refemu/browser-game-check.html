@@ -1,0 +1,78 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Stinger — worker in a browser (ST-M4)</title>
+<!--
+  Runs app/gameWorker.js in a real browser engine, drives it for N frames with an
+  input script, and renders the frame it produces with app/tileMapRender.js — the
+  same path the game takes, minus the svision UI. tools/refemu/browser-game-check.sh
+  compares the result with the reference emulator's picture for the same frame, so
+  the browser half of ST-M4 is verified end to end: the worker's ES2018 subset, the
+  base64 table decoding, the generators, ImageData and the canvas.
+  Served from the project root; ?frames=N&script=play|attract
+
+  ?live=1 instead checks the path the app itself takes: init exactly as
+  app/mainModel.js sends it (no input script), which makes the worker fast
+  forward through the reset, the title, a coin and the start button and land in
+  the running game — the thing a player sees after choosing PLAY in the menu.
+  The interval loop is stubbed out so the page can tick deterministically.
+-->
+<body style="margin:0;background:#000">
+<canvas id="c" width="224" height="256"></canvas>
+<script>
+  // the page drives the worker itself, so the 60 Hz interval must not also run
+  window.setInterval = function() { return 0; };
+</script>
+<script src="../../app/gameWorker.js"></script>
+<script type="module">
+import {TileMapRender} from '../../app/tileMapRender.js';
+
+const params = new URLSearchParams(location.search);
+const frames = parseInt(params.get('frames') || '700', 10);
+const which = params.get('script') || 'play';
+
+const load = async (name) => (await fetch('../../' + name)).json();
+const [tiles, sprites, palette, tables] = await Promise.all([
+  load('data/tiles.json'), load('data/sprites.json'),
+  load('data/palette.json'), load('data/tables.json')
+]);
+
+const KEYS0 = {c: 0x01, b: 0x04, '2': 0x08, '1': 0x10, f: 0x40};
+const KEYS1 = {r: 0x01, l: 0x02, u: 0x10, d: 0x20};
+const text = await (await fetch('../../sources/reference/input-' + (which === 'play' ? 'play' : 'attract') + '.txt')).text();
+const inputScript = text.split('\n')
+  .map((l) => l.split('#')[0].trim()).filter((l) => l.length)
+  .map((l) => {
+    const p = l.split(/\s+/);
+    let a = 0, b = 0;
+    for (const k of (p[1] || '')) { if (KEYS0[k]) a |= KEYS0[k]; if (KEYS1[k]) b |= KEYS1[k]; }
+    return {frame: parseInt(p[0], 10), in0: a, in1: b};
+  });
+
+// the worker script installed onmessage and self.__st on this window
+self.postMessage = () => {};
+const live = params.get('live') === '1';
+self.onmessage({data: {id: 'init', initData: live
+  ? {headless: false, attract: which === 'attract', tables}
+  : {headless: true, tables, inputScript}}});
+const worker = self.__st;
+for (let f = 0; f < frames; f++) {
+  worker.tick();
+}
+
+const render = new TileMapRender({tiles, sprites, palette});
+const message = worker.frameMessage();
+const ctx = document.getElementById('c').getContext('2d');
+const image = ctx.createImageData(224, 256);
+render.renderFrame({vram: message.vram, attr: message.attr, sprites: message.sprites, regs: message.regs}, image.data);
+ctx.putImageData(image, 0, 0);
+
+const out = document.createElement('div');
+out.id = 'png';
+out.textContent = document.getElementById('c').toDataURL('image/png');
+document.body.appendChild(out);
+const info = document.createElement('div');
+info.id = 'info';
+info.textContent = JSON.stringify({frame: message.frame, score: message.score, lives: message.lives,
+  round: message.round, state: message.state});
+document.body.appendChild(info);
+</script>

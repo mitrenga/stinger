@@ -1,0 +1,30 @@
+{
+ "//": "ST-M6: which parts of the sound ROM (6-9f.bin) app/soundDriver.js may read. Only DATA — the sound program itself is transcribed to JavaScript, exactly as the main program is (decision 2026-08-30: the browser gets tables, never a ROM image). Addresses and meanings come from sources/asm/stinger/notes/E.md.",
+ "rom": "sources/rom/stinger/6-9f.bin",
+ "tables": [
+  {
+   "name": "romStart",
+   "from": "0x0000",
+   "len": "0x400",
+   "note": "E (h): command 0Ch leaves the three AY2 channel pointers at 0000h (07E5-0817 writes them explicitly), so the original plays the start of its own ROM as note data. Reproduced for fidelity — these bytes are read as data here, never executed."
+  },
+  {
+   "name": "cmdTable",
+   "from": "0x0520",
+   "len": "0x40",
+   "note": "E (c),(g): the command jump table 0520-0551 read by dispatch_cmd 01A9 (HL = 0520h + A, through L only). Kept as a whole page-aligned block up to 055F so every even command 00-30h resolves from data; odd and out-of-range commands take their pointer from the program code around it, which is transcribed, not shipped (notes/E.md (g): they all end in a reset of the sound CPU)."
+  },
+  {
+   "name": "musicLow",
+   "from": "0x0890",
+   "len": "0x2D6",
+   "note": "E (c): note data of commands 02 (0890/08F0/0950 | 09A0/0A10/0A4F) and 04 (0A80/0AA0/0AC0 | 0AE0/0B00/0B20)"
+  },
+  {
+   "name": "musicHigh",
+   "from": "0x0E40",
+   "len": "0x11C0",
+   "note": "E (c): note data of every remaining command — 10 (0E50/0E70/0E90), 12 (0EB0/0F00/0F50), 26 (0F70/0FA0/0FD0), 16 (1000/1020/1040), 22 (1060/1080/10A0), 24 (10C0/10E0/1100), 0C (1120/1140/1160), 14 (1180/11F0/1260), 28 (12D0/1310/1350), 2A (1390/13E0/1430), 08 (1480..1570), 06 (15A0..1820), 0A (18A0..1B20), 20 (1BA0/1CA0/1DB0)"
+  }
+ ]
+}
