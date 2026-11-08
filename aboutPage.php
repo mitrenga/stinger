@@ -10,7 +10,6 @@ class AboutPage extends AbstractAboutPage {
 
   protected function aboutData() {
     return [
-      'image' => 'images/cover.png',
       'sections' => [
         [
           'heading' => 'The original game (1983)',

@@ -12,7 +12,6 @@
     'Please enable JavaScript to start the game.</p>'.
     '<p><a href="about">More about Stinger and this remake</a></p>';
   $appOpenGraph = [
-    'image' => 'images/poster.png',
   ];
   $appJsonLd = [
     'genre' => 'Shoot \'em up',
