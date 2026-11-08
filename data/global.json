@@ -1,0 +1,4 @@
+{
+   "skeleton": true,
+   "note": "ST-M2 skeleton: tiles/sprites/palette come from tools/rom2tiles.mjs (ST-M1); tables.json from rom2tables (ST-M4)"
+}
