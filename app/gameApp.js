@@ -55,7 +55,6 @@ export class GameApp extends AbstractApp {
     // Extra glyphs + hard/short spaces live in the game (svision core fonts are ASCII + normal space).
     this.fonts.fonts5x5.addSpace('␣', {width: 2, breaking: false, stretch: true});
 
-    this.fonts.zxFonts8x8.addGlyphs('⋅', '0000000030000000');
     this.fonts.zxFonts8x8.addSpace('␣', {width: 3, breaking: false, stretch: false});
 
     // arcade controls: 4-way stick + FIRE + BONGO CALL (GAME-DESIGN chap. 5)
