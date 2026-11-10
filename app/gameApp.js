@@ -55,12 +55,6 @@ export class GameApp extends AbstractApp {
     // Extra glyphs + hard/short spaces live in the game (svision core fonts are ASCII + normal space).
     this.fonts.fonts5x5.addGlyphs({
       'Ⓥ': {width: 3, data: [[0,2,1,1], [0,3,1,1], [1,4,1,1], [2,3,1,1], [2,2,1,1]]},
-      '←': {width: 6, data: [[0,2,6,1], [1,1,1,3], [2,0,1,5]]},
-      '↓': {width: 5, data: [[2,0,1,5], [1,3,3,1], [0,2,5,1]]},
-      '↑': {width: 5, data: [[2,0,1,5], [1,1,3,1], [0,2,5,1]]},
-      '→': {width: 6, data: [[0,2,6,1], [4,1,1,3], [3,0,1,5]]},
-      // blinking cursor for the key-remap screen
-      '█': {width: 4, data: [[0,0,4,5]]},
       // devModeName banner decoration
       '◢': {width: 4, data: [[4,0,1,1], [3,1,2,1], [2,2,3,1], [1,3,4,1], [0,4,5,1]]},
       '◤': {width: 4, data: [[0,0,5,1], [0,1,4,1], [0,2,3,1], [0,3,2,1], [0,4,1,1]]}
